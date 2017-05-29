@@ -1,0 +1,554 @@
+<html>
+
+	<head>
+	
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<!-- jQuery library -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	
+
+	<!-- Latest compiled JavaScript -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	
+	
+	
+		<script type="text/javascript">
+		var tableToExcel = (function() {
+		  var uri = 'data:application/vnd.ms-excel;base64,'
+			, template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>{table}</table></body></html>'
+			, base64 = function(s) { return window.btoa(unescape(encodeURIComponent(s))) }
+			, format = function(s, c) { return s.replace(/{(\w+)}/g, function(m, p) { return c[p]; }) }
+		  return function(table, name) {
+			if (!table.nodeType) table = document.getElementById(table)
+			var ctx = {worksheet: name || 'Worksheet', table: table.innerHTML}
+			window.location.href = uri + base64(format(template, ctx))
+		  }
+		})()
+		</script>
+		
+		<script>
+		
+			bootstrap_alert = function () {}
+			bootstrap_alert.warning = function (message, alert, timeout) {
+				$('<span id="floating_alert" class="alert alert-' + alert + ' fade in">' + message + '</span>').appendTo('#buttons');
+
+
+				setTimeout(function () {
+					$(".alert").alert('close');
+				}, timeout);
+
+			}
+			
+			var row, a, tempRow, reqID, testName, type, sarathi, featureDescription, module, subject, testSummary, preCondition, testSteps, priority, complexity, positiveNegative, testData, expectedResult, actualResult, subjective, isRegression, isUnitTestCase, isAutomated;
+		
+		
+			
+			function saveAsDraft(){
+				localStorage.setItem("test", "test local storage data");
+				alert(localStorage.getItem("test"));
+			}
+			
+		
+		
+			function clear(){
+				document.getElementById("reqID").value = "";
+				//document.getElementById("testType").value = "";
+				//guiDB.value = "1";
+				document.getElementById("testSummary").value = "";
+				document.getElementById("preCondition").value = "";
+				document.getElementById("testSteps").value = "";
+				document.getElementById("priority").value = "";
+				document.getElementById("complexity").value = "";
+				//document.getElementById("positiveNegative").value = "";
+				document.getElementById("testData").value = "";
+				document.getElementById("expectedResult").value = "";
+				//document.getElementById("regression").value = "";
+				//document.getElementById("unitTC").value = "";
+			}
+		
+			function clearAll(){
+				
+				var confirmation = confirm("Are you sure you want to clear all fields ?");
+				if(!confirmation){
+					return;
+				}
+				
+				document.getElementById("sarathi").value = "";
+				document.getElementById("featureDescription").value = "";
+				document.getElementById("module").value = "";
+				document.getElementById("subject").value = "";
+				clear();
+				bootstrap_alert.warning('<strong>Cleared</strong> ', 'success', 4000);
+				
+			}
+			
+			function clearNonMandatory(){
+				var confirmation = confirm("Are you sure you want to clear all non-mandatory fields ?");
+				if(!confirmation){
+					return;
+				}
+				clear();
+				
+				bootstrap_alert.warning('<strong>Cleared</strong> ', 'success', 4000);
+			}
+			
+			function editTable(){
+				if(document.getElementById("editTable").value == "Edit"){
+					document.getElementById("testTable1").contentEditable = true;
+					document.getElementById("editTable").value = "Save";
+					bootstrap_alert.warning('<strong>Test Case(s) Table is in "Edit" mode</strong> ', 'warning', 4000);
+				}
+				else{
+					document.getElementById("testTable1").contentEditable = false;
+					document.getElementById("editTable").value = "Edit";
+					bootstrap_alert.warning('<strong>Saved</strong> ', 'success', 4000);
+				}
+			}
+			
+			function deleteRow(){
+				var row1 = prompt("Enter Test Case Number to delete : ", "1");
+				var option = confirm("Are you sure you want to delete Test Case " + row1 + " ? \n\n(Test Names will be updated)\n\n");
+				if(!option){
+					return;
+				}
+				
+				document.getElementById("testTable1").deleteRow(row1 - 1);
+				
+				bootstrap_alert.warning('<strong>Test Case Deleted</strong> ', 'success', 4000);
+				
+				var table = document.getElementById("testTable1");
+				var temp;
+				for (var i = row1-1, row; row = table.rows[i]; i++) {
+				   temp = row.cells[1];
+				   var str = temp.innerHTML;
+				   var index = str.lastIndexOf("_") + 1;
+				   var s = str.substr(0, index) + row1++;
+				   temp.innerHTML = s;
+				}
+				
+				if ($('#testTable1 tr').length == 0) {
+				  disableFields();
+				}
+			}
+			
+			function deleteTable(){
+				var confirmation = confirm("Are you sure you want to delete all Test Cases ?");
+				if(!confirmation){
+					return;
+				}
+			
+				$("#testTable1 tr").remove();
+				disableFields();
+				bootstrap_alert.warning('<strong>Test Case(s) Deleted</strong> ', 'success', 4000);
+			}
+			
+			function disableFields(){
+				document.getElementById("viewTC").disabled = true;
+				document.getElementById("exportTC").disabled = true;
+				//document.getElementById("editTable").disabled = true;
+				document.getElementById("deleteTable").disabled = true;
+				document.getElementById("deleteRow").disabled = true;
+				document.getElementById("saveTC").disabled = true;
+			}
+			
+			function addMultiple(){
+				
+				if(document.getElementById("sarathi").value == "" || document.getElementById("module").value == "" || document.getElementById("featureDescription").value == "" || document.getElementById("subject").value == ""){
+					alert("Please enter all mandatory fields");
+					return;
+				}
+			
+				var count = prompt("Enter number of Test Cases to be created :");
+				for(var i = 0;i < count;i++){
+					addRow();
+				}
+			}
+			
+			
+			function saveTC(){
+				//saveRow();
+				//alert("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(1)")
+				//$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(1)").html("This one");
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(1)").html(document.getElementById("reqID").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(2)").html("TC_" + document.getElementById("sarathi").value + "_" + tempRow);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(3)").html(document.getElementById("testType").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(4)").html(document.getElementById("sarathi").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(5)").html(document.getElementById("featureDescription").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(6)").html(document.getElementById("module").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(7)").html(document.getElementById("subject").value);
+				//guiDB.innerHTML = "1";
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(8)").html(document.getElementById("testSummary").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(9)").html(document.getElementById("preCondition").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(10)").html(document.getElementById("testSteps").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(11)").html(document.getElementById("priority").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(12)").html(document.getElementById("complexity").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(13)").html(document.getElementById("positiveNegative").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(14)").html(document.getElementById("testData").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(15)").html(document.getElementById("expectedResult").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(16)").html("");
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(17)").html("");
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(18)").html(document.getElementById("regression").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(19)").html(document.getElementById("unitTC").value);
+				$("#testTable1 tr:nth-child(" + tempRow + ") td:nth-child(20)").html(document.getElementById("isAutomated").value);
+				//$(a.html()+" td:nth-child(1)").html() = "This one";
+				//alert(a.find('td:nth-child(2)').html());
+				document.getElementById("saveTC").disabled = true;
+				bootstrap_alert.warning('<strong>Test Case updated</strong> ', 'success', 4000);
+			}
+			
+			function rowSelection(){
+				$("#testTable1 tr").unbind().click(function(){
+				   //$(this).addClass('selected').siblings().removeClass('selected');   
+					var option = confirm("Are you sure you want to edit this Test Case ?");
+					if(!option)
+						return;
+				   var value=$(this).find('td:nth-child(2)').html();
+				   //a = $(this);
+				   //alert(a.find('td:nth-child(2)').html());
+				   //var length = $(this).find('td:nth-child(2)').html().length;
+				   //alert(length);
+				   var index = $(this).find('td:nth-child(2)').html().lastIndexOf('_');
+				   var length = $(this).find('td:nth-child(2)').html().length;
+				   //alert(value.substr(index + 1, length - index - 1));
+				   tempRow = value.substr(index + 1, length - index - 1);
+					document.getElementById("reqID").value = $(this).find('td:nth-child(1)').html();
+					//testName.innerHTML = "TC_" + document.getElementById("sarathi").value + "_" + row.rowIndex;
+					document.getElementById("testType").value = $(this).find('td:nth-child(3)').html();
+					document.getElementById("sarathi").value = $(this).find('td:nth-child(4)').html();
+					document.getElementById("featureDescription").value = $(this).find('td:nth-child(5)').html();
+					document.getElementById("module").value = $(this).find('td:nth-child(6)').html();
+					document.getElementById("subject").value = $(this).find('td:nth-child(7)').html();
+					//guiDB.innerHTML = "1";
+					document.getElementById("testSummary").value = $(this).find('td:nth-child(8)').html();
+					document.getElementById("preCondition").value = $(this).find('td:nth-child(9)').html();
+					document.getElementById("testSteps").value = $(this).find('td:nth-child(10)').html();
+					document.getElementById("priority").value = $(this).find('td:nth-child(11)').html();
+					document.getElementById("complexity").value = $(this).find('td:nth-child(12)').html();
+					document.getElementById("positiveNegative").value = $(this).find('td:nth-child(13)').html();
+					document.getElementById("testData").value = $(this).find('td:nth-child(14)').html();
+					document.getElementById("expectedResult").value = $(this).find('td:nth-child(15)').html();
+					//actualResult.innerHTML = "";
+					//subjective.innerHTML = "";
+					document.getElementById("regression").value = $(this).find('td:nth-child(18)').html();
+					document.getElementById("unitTC").value = $(this).find('td:nth-child(19)').html();
+					document.getElementById("isAutomated").value = $(this).find('td:nth-child(20)').html();
+					
+					document.getElementById("saveTC").disabled = false;
+					$('html,body').scrollTop(0);
+					bootstrap_alert.warning('<strong>Edit required fields and Save TC</strong> ', 'success', 4000);
+				});
+			}
+			
+			
+			function MemberInfo(fName,lName,memberId){
+				this.FirstName=fName;
+				this.LastName=lName;
+				this.MemberId=memberId;    
+			}
+			
+			
+			function saveRow(){
+				//btn.innerHTML= "<td><button class='editbtn'>Edit</button></td>";
+				reqID.innerHTML= document.getElementById("reqID").value;
+				testName.innerHTML = "TC_" + document.getElementById("sarathi").value + "_" + row.rowIndex;
+				type.innerHTML = document.getElementById("testType").value;
+				sarathi.innerHTML = document.getElementById("sarathi").value;
+				featureDescription.innerHTML = document.getElementById("featureDescription").value;
+				module.innerHTML = document.getElementById("module").value;
+				subject.innerHTML = document.getElementById("subject").value;
+				//guiDB.innerHTML = "1";
+				testSummary.innerHTML = document.getElementById("testSummary").value;
+				preCondition.innerHTML = document.getElementById("preCondition").value;
+				testSteps.innerHTML = document.getElementById("testSteps").value;
+				priority.innerHTML = document.getElementById("priority").value;
+				complexity.innerHTML = document.getElementById("complexity").value;
+				positiveNegative.innerHTML = document.getElementById("positiveNegative").value;
+				testData.innerHTML = document.getElementById("testData").value;
+				expectedResult.innerHTML = document.getElementById("expectedResult").value;
+				actualResult.innerHTML = "";
+				subjective.innerHTML = "";
+				isRegression.innerHTML = document.getElementById("regression").value;
+				isUnitTestCase.innerHTML = document.getElementById("unitTC").value;
+				isAutomated.innerHTML = document.getElementById("isAutomated").value;
+				
+				
+				//Saving in Draft
+				var table = [];    
+				$("#testTable1").find('tr').each(function(index,item){
+			   
+					var fName=$(item).find('td').eq(0).text();
+					var lName=$(item).find('td').eq(1).text();
+					var memberId=$(item).find('td').eq(2).text();
+					table.push(new MemberInfo(fName,lName,memberId))
+				});
+					  
+			  //localStorage.setItem("testCases", JSON.stringify(table));
+				
+				//alert((JSON.parse(localStorage.getItem("testCases"))).fName);
+				
+				localStorage.setItem('testCases', JSON.stringify(table));
+				testCases = localStorage.getItem('testCases');
+				testCases = JSON.parse(testCases);
+				//alert(testCases.FirstName);
+				$.each(testCases, function(index,item){
+				   console.log(item.FirstName);
+				});
+				
+			}
+			
+					
+			function addRow() {
+			
+				if(document.getElementById("sarathi").value == "" || document.getElementById("module").value == "" || document.getElementById("featureDescription").value == "" || document.getElementById("subject").value == ""){
+					alert("Please enter all mandatory fields");
+					return;
+				}
+				
+				//Declaring Variables
+				var table = document.getElementById("testTable1");
+				row = table.insertRow(-1);
+				row.className = 'row1';
+				row.addEventListener('click', rowSelection());
+				//row.contentEditable = true;
+				//var btn = row.insertCell(0);
+				 reqID = row.insertCell(0);
+				 testName = row.insertCell(1);
+				 type = row.insertCell(2);
+				 sarathi = row.insertCell(3);
+				 featureDescription = row.insertCell(4);
+				 module = row.insertCell(5);
+				 subject = row.insertCell(6);
+				//var guiDB = row.insertCell(7);
+				 testSummary = row.insertCell(7);
+				 preCondition = row.insertCell(8);
+				 testSteps = row.insertCell(9);
+				 priority = row.insertCell(10);
+				 complexity = row.insertCell(11);
+				 positiveNegative = row.insertCell(12);
+				 testData = row.insertCell(13);
+				 expectedResult = row.insertCell(14);
+				 actualResult = row.insertCell(15);
+				 subjective = row.insertCell(16);
+				 isRegression = row.insertCell(17);
+				 isUnitTestCase = row.insertCell(18);
+				 isAutomated = row.insertCell(19);
+				
+				
+				//alert(row.rowIndex);
+				//Setting Variables values
+				saveRow();
+				
+				document.getElementById("viewTC").disabled = false;
+				document.getElementById("exportTC").disabled = false;
+				//document.getElementById("editTable").disabled = false;
+				document.getElementById("deleteTable").disabled = false;
+				document.getElementById("deleteRow").disabled = false;
+				
+				bootstrap_alert.warning('<strong>Test Case(s) Added</strong> ', 'success', 4000);
+				
+				
+			}
+		</script>
+		
+		
+		<style>
+			label{
+				font-size : 80%;
+			}
+			
+			#content tr td:nth-child(odd){
+				text-align : right;
+			}
+			
+			#content {
+				border-bottom:0px !important;
+			}
+			
+			#content th, #content td {
+				border: 1px !important;
+			}
+			
+			#header{
+				background : #c7c7c7;
+				padding : 1%;
+				position : fixed;
+				width : 100%;
+			}
+			
+			#floating_alert {
+				position: absolute;
+				top: 7%;
+				left: 45%;
+				z-index: 5000;
+				position : fixed;
+			}
+			
+		</style>
+		
+	</head>
+	
+	<body class="container-fluid">
+
+		<div class="row" id="header">
+			<label style="font-family : 'Times New Roman', Times, serif;font-size : 160%"><strong>Test Case Document Generator</strong></label>
+			<input id="exportTC" class="btn btn-success" type="button" style="float:right;margin-right:1%" onclick="tableToExcel('testTable', 'W3C Example Table')" value="Export to Excel" disabled>
+			<a href="#testTable"><input id="viewTC" class="btn btn-success" type="button" style="float:right;margin-right:1%" value="View TCs" disabled></a>
+		</div>
+		<br/><br/>
+		
+		<div id="buttons" class="row" style="margin-top : 2.5%">	
+			<input class="btn btn-warning" type="button" style="float:right;margin-right:1%" onclick="clearAll()" value="Clear All">
+			<input class="btn btn-warning" type="button" style="float:right;margin-right:1%" onclick="clearNonMandatory()" value="Clear non-mandatory">
+			<input class="btn btn-primary" type="button" style="float:right;margin-right:1%" onclick="addMultiple()" value="Add Multiple TCs">
+			<input class="btn btn-primary" type="button" style="float:right;margin-right:1%" onclick="addRow()" value="Add TC">
+		</div>
+		
+		<div class="row">
+			<table id="content" class="table" style="width:75%;margin: 0px auto;">
+				<tr>
+					<td><label>Sarathi ID<span style="color : red;font-size:150%"><strong> *</strong></span></label></td>
+					<td><input id="sarathi" class="form-control input-sm" type="text" placeholder="Sarathi"></td>
+					<td><label>Module<span style="color : red;font-size:150%"><strong> *</strong></span></label></td>
+					<td><input id="module" class="form-control input-sm" type="text" placeholder="Module"></td>
+				</tr>
+				<tr>
+					<td><label>Feature Description<span style="color : red;font-size:150%"><strong> *</strong></span></label></td>
+					<td><textarea id="featureDescription" class="form-control input-sm" placeholder="Feature Description" cols="40"></textarea></td>
+					<td><label>Subject<span style="color : red;font-size:150%"><strong> *</strong></span></label></td>
+					<td><textarea id="subject" class="form-control input-sm" placeholder="Subject" cols="40"></textarea></td>
+				</tr>
+				
+				<tr>
+					<td><label>Req ID</label></td>
+					<td><input id="reqID" class="form-control input-sm" type="text" placeholder="Requirement ID"></td>
+					<td><label>Test Type</label></td>
+					<td>
+						<select id="testType" class="form-control input-sm">
+							<option>Functional</option>
+							<option>Sanity</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td><label>Test Summary</label></td>
+					<td><textarea id="testSummary" class="form-control input-sm" placeholder="Test Summary" cols="40"></textarea></td>
+					<td><label>Pre-Condition</label></td>
+					<td><textarea id="preCondition" class="form-control input-sm" placeholder="Pre-Condition" cols="40"></textarea></td>
+				</tr>
+				<tr>
+					<td><label>Test Steps</label></td>
+					<td><textarea id="testSteps" class="form-control input-sm" placeholder="Test Steps" cols="40"></textarea></td>
+					<td><label>Test Data</label></td>
+					<td><textarea id="testData" class="form-control input-sm" placeholder="Test Data" cols="40"></textarea></td>
+				</tr>
+				<tr>
+					<td><label>Priority</label></td>
+					<td><input id="priority" class="form-control input-sm" type="text" placeholder="Priority"></td>
+					<td><label>Complexity</label></td>
+					<td><input id="complexity" class="form-control input-sm" type="text" placeholder="Complexity"></td>
+				</tr>
+				<tr>
+					<td><label>Positive / Negative</label></td>
+					<td>
+						<select id="positiveNegative" class="form-control input-sm">
+							<option>Positive</option>
+							<option>Negative</option>
+						</select>
+					</td>
+					<td><label>Expected Result</label></td>
+					<td><textarea id="expectedResult" class="form-control input-sm" placeholder="Expected Result" cols="40"></textarea></td>
+				</tr>
+				<tr>
+					<td><label>Regression ?</label></td>
+					<td>
+						<select id="regression" class="form-control input-sm">
+							<option>No</option>
+							<option>Yes</option>
+						</select>
+					</td>
+					<td><label>Unit Test Case ?</label></td>
+					<td>
+						<select id="unitTC" class="form-control input-sm">
+							<option>No</option>
+							<option>Yes</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td><label>Automated ?</label></td>
+					<td>
+						<select id="isAutomated" class="form-control input-sm">
+							<option>No</option>
+							<option>Yes</option>
+						</select>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<br/>
+		<div class="row">
+			<div class="col-md-12">
+				<input type="button" id="saveTC" onclick="saveTC()" value="Save TC" class="btn btn-success" style="float: right;margin-right: 1%" disabled/>
+			</div>
+		</div>
+		
+		<br/><br/><hr style="height:1px;border:none;color:#333;background-color:#333;" />
+			<h2 align=center>Test Cases</h2>
+		<br/>
+		
+		
+		<div class="row">
+			<div class="col-md-12">
+				<em><strong><span style="font-size:120%">(**** Click on any Test Case to edit ****)</span></strong></em>
+				<input type="button" id="deleteTable" onclick="deleteTable()" value="Delete All" class="btn btn-danger" style="float: right;margin-right: 1%" disabled/>
+				<input type="button" id="deleteRow" onclick="deleteRow()" value="Delete" class="btn btn-danger" style="float: right;margin-right: 1%" disabled/>
+				<input type="button" id="saveAsDraft" onclick="saveAsDraft()" value="Save as Draft" class="btn btn-primary" style="float: right;margin-right: 1%"/>
+				<!--<input type="button" id="editTable" onclick="editTable()" value="Edit" class="btn btn-primary" style="float: right;margin-right: 1%" disabled/>-->
+			</div>
+		</div>
+		
+		<div class="row">
+			<div class="col-md-12">
+				<table id="testTable" class="table table-hover">
+					<thead>
+						<tr>
+							<th>ReqId</th>
+							<th>Test Name</th>
+							<th>Type</th>
+							<th>Sarathi ID</th>
+							<th>Feature Description</th>
+							<th>Module</th>
+							<th>Subject</th>
+							<!--<th>GUI/DB</th>-->
+							<th>Test Summary</th>
+							<th>Pre-Condition</th>
+							<th>Test Steps</th>
+							<th>Priority</th>
+							<th>Complexity</th>
+							<th>Positive/Negative</th>
+							<th>Test Data</th>
+							<th>Expected Result</th>
+							<th>Actual Result</th>
+							<th>Subjective</th>
+							<th>Is Regression?</th>
+							<th>Is Unit Test Case?</th>
+							<th>Is Automated?</th>
+						</tr>
+					</thead>
+					
+					<tbody id="testTable1">
+						
+					</tbody>
+				</table>
+			</div>
+		</div>
+		
+
+<!--
+	<table summary="Code page support in different versions of MS Windows." rules="groups" frame="hsides" border="2"><caption>CODE-PAGE SUPPORT IN MICROSOFT WINDOWS</caption><colgroup align="center"></colgroup><colgroup align="left"></colgroup><colgroup span="2" align="center"></colgroup><colgroup span="3" align="center"></colgroup><thead valign="top"><tr><th>Code-Page<br>ID</th><th>Name</th><th>ACP</th><th>OEMCP</th><th>Windows<br>NT 3.1</th><th>Windows<br>NT 3.51</th><th>Windows<br>95</th></tr></thead><tbody><tr><td>1200</td><td style="background-color: #00f; color: #fff">Unicode (BMP of ISO/IEC-10646)</td><td></td><td></td><td>X</td><td>X</td><td>*</td></tr><tr><td>1250</td><td style="font-weight: bold">Windows 3.1 Eastern European</td><td>X</td><td></td><td>X</td><td>X</td><td>X</td></tr><tr><td>1251</td><td>Windows 3.1 Cyrillic</td><td>X</td><td></td><td>X</td><td>X</td><td>X</td></tr><tr><td>1252</td><td>Windows 3.1 US (ANSI)</td><td>X</td><td></td><td>X</td><td>X</td><td>X</td></tr><tr><td>1253</td><td>Windows 3.1 Greek</td><td>X</td><td></td><td>X</td><td>X</td><td>X</td></tr><tr><td>1254</td><td>Windows 3.1 Turkish</td><td>X</td><td></td><td>X</td><td>X</td><td>X</td></tr><tr><td>1255</td><td>Hebrew</td><td>X</td><td></td><td></td><td></td><td>X</td></tr><tr><td>1256</td><td>Arabic</td><td>X</td><td></td><td></td><td></td><td>X</td></tr><tr><td>1257</td><td>Baltic</td><td>X</td><td></td><td></td><td></td><td>X</td></tr><tr><td>1361</td><td>Korean (Johab)</td><td>X</td><td></td><td></td><td>**</td><td>X</td></tr></tbody><tbody><tr><td>437</td><td>MS-DOS United States</td><td></td><td>X</td><td>X</td><td>X</td><td>X</td></tr><tr><td>708</td><td>Arabic (ASMO 708)</td><td></td><td>X</td><td></td><td></td><td>X</td></tr><tr><td>709</td><td>Arabic (ASMO 449+, BCON V4)</td><td></td><td>X</td><td></td><td></td><td>X</td></tr><tr><td>710</td><td>Arabic (Transparent Arabic)</td><td></td><td>X</td><td></td><td></td><td>X</td></tr><tr><td>720</td><td>Arabic (Transparent ASMO)</td><td></td><td>X</td><td></td><td></td><td>X</td></tr></tbody></table>
+-->	
+
+	</body>
+</html>
